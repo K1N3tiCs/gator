@@ -1,21 +1,55 @@
 package main
 
 import (
-	"fmt"
-	"github.com/K1N3tiCs/gator/internal/config"
+	"database/sql"
 	"log"
+	"os"
+
+	"github.com/K1N3tiCs/gator/internal/config"
+	"github.com/K1N3tiCs/gator/internal/database"
+	_ "github.com/lib/pq"
 )
 
+type state struct {
+	cfg *config.Config
+	db  *database.Queries
+}
+
 func main() {
-	jsonConfig, err := config.Read()
+	cfg, err := config.Read()
 	if err != nil {
-		log.Fatal("failed reading the json config file")
-	}
-	fmt.Println(jsonConfig)
-
-	if err := jsonConfig.SetUser("Penguuu"); err != nil {
-		log.Fatal("failed to set user")
+		log.Fatalf("error reading config: %v", err)
 	}
 
-	fmt.Println(jsonConfig)
+	db, err := sql.Open("postgres", cfg.DBURL)
+	if err != nil {
+		log.Fatalf("error opening database connection: %v", err)
+	}
+
+	dbQueries := database.New(db)
+
+	programState := &state{
+		cfg: &cfg,
+		db:  dbQueries,
+	}
+
+	cmds := commands{
+		registeredCommands: make(map[string]func(*state, command) error),
+	}
+	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerDeleteAll)
+	cmds.register("users", handlerUsersList)
+
+	if len(os.Args) < 2 {
+		log.Fatal("Usage: cli <command> [args...]")
+	}
+
+	cmdName := os.Args[1]
+	cmdArgs := os.Args[2:]
+
+	err = cmds.run(programState, command{Name: cmdName, Args: cmdArgs})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
