@@ -38,7 +38,7 @@ func handlerRegister(s *state, cmd command) error {
 
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.Args) != 1 {
-		return fmt.Errorf("usage: %s <name>", cmd.Name)
+		return fmt.Errorf("usage: %v <name>", cmd.Name)
 	}
 	name := cmd.Args[0]
 
@@ -72,6 +72,6 @@ func handlerListUsers(s *state, cmd command) error {
 }
 
 func printUser(user database.User) {
-	fmt.Printf(" * ID: %v\n", user.ID)
-	fmt.Printf(" * Name: %v\n", user.Name)
+	fmt.Printf(" * ID:      %v\n", user.ID)
+	fmt.Printf(" * Name:    %v\n", user.Name)
 }
